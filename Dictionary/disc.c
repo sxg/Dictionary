@@ -39,3 +39,40 @@ double* disc(const double *times, const double *artConc, const double *pvConc, c
 
 	return contrast;
 }
+
+double* artSignal2contrast(const double *artSignal, const double *pvSignal, const double flipAngle, const double t1Blood, const double tr, const double t1Contrast, const int startFrame, const int addFrames)
+{
+	int t = sizeof(artSignal) / sizeof(artSignal[0]);
+	double alpha = flipAngle * M_PI / 180.0f;
+	double r1Blood = 1 / t1Blood / 1000.0f;
+	double hematocrit = 0.4;
+
+	// Take absolute value of signals
+	double *artSignalAbs = (double *)malloc(sizeof(artSignal));
+	double *pvSignalAbs = (double *)malloc(sizeof(pvSignal));
+	for (int i = 0; i < t; i++) {
+		artSignalAbs[i] = fabs(artSignal[i]);
+		pvSignalAbs[i] = fabs(pvSignal[i]);
+	}
+
+	// Calculate M0
+	double m0 = 0.0f;
+	for (int i = startFrame; i < startFrame + addFrames; i++) {
+		m0 += pvSignalAbs[i];
+	}
+	m0 /= addFrames;
+
+	double s0b = m0 * ((1.0f - exp(-1.0f * r1Blood * tr) * cos(alpha)) / (1.0f - exp(-1.0f * r1Blood * tr)) / sin(alpha));
+	double *r1b = (double *)sizeof(artSignal);
+	for (int i = 0; i < t; i++) {
+		r1b[i] = log( ( (s0b * sin(alpha)) - (artSignal[i] * cos(alpha)) ) / (s0b * sin(alpha) - artSignal[i]) ) / tr;
+	}
+
+	// Allocate memory for the output
+	double *artContrast = (double *)malloc(sizeof(artSignal));
+	for (int i = 0; i < t; i++) {
+		artContrast[i] = (r1b[i] - r1Blood) * 1000.0f / t1Contrast / (1.0f - hematocrit);
+	}
+
+	return artContrast;
+}
