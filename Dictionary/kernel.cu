@@ -4,6 +4,9 @@
 
 #include <stdio.h>
 
+#include "hdf5.h"
+#include "hdf5_hl.h"
+
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);
 
 __global__ void addKernel(int *c, const int *a, const int *b)
@@ -37,6 +40,7 @@ int main()
         return 1;
     }
 
+	getchar();
     return 0;
 }
 
